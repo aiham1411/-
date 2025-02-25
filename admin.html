@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>لوحة تحكم المنتجات</title>
+  <style>
+    /* الأنماط الأصلية */
+    body {
+      font-family: Arial, sans-serif;
+      direction: rtl;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+    }
+    form {
+      background: #fff;
+      padding: 20px;
+      border: 1px solid #ddd;
+      margin-bottom: 20px;
+      max-width: 400px;
+      margin: auto;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+    input, textarea, button {
+      padding: 8px;
+      margin-top: 5px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    textarea {
+      height: 80px;
+      resize: vertical;
+    }
+    .product {
+      background: #fff;
+      padding: 10px;
+      border: 1px solid #ddd;
+      margin-bottom: 10px;
+      max-width: 400px;
+      margin: auto;
+    }
+    .product h3 {
+      margin: 0;
+    }
+    .product p {
+      margin: 5px 0;
+    }
+    .product button {
+      width: auto;
+      margin-right: 5px;
+    }
+    
+    /* الأنماط المضافة */
+    .product-image {
+      max-width: 100%;
+      height: 150px;
+      object-fit: contain;
+      display: block;
+      margin: 10px auto;
+    }
+    .whatsapp-btn {
+      background: #25D366;
+      color: white;
+      padding: 8px 15px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>لوحة تحكم المنتجات</h1>
+  
+  <form id="productForm">
+    <label for="productName">اسم المنتج:</label>
+    <input type="text" id="productName" placeholder="أدخل اسم المنتج" required>
+    
+    <label for="productPrice">السعر (ر.ي):</label>
+    <input type="number" id="productPrice" placeholder="أدخل السعر بالريال اليمني" required>
+    
+    <label for="productCategory">القسم:</label>
+    <input type="text" id="productCategory" placeholder="أدخل القسم" required>
+    
+    <label for="productImage">صورة المنتج:</label>
+    <input type="file" id="productImage" accept="image/*" required>
+    
+    <button type="submit">إضافة المنتج</button>
+  </form>
+
+  <div id="productList"></div>
+
+  <script>
+    // دالة تحويل الصورة إلى base64
+    function convertImageToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // حدث إضافة المنتج
+    document.getElementById('productForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      try {
+        const imageFile = document.getElementById('productImage').files[0];
+        const imageBase64 = await convertImageToBase64(imageFile);
+
+        const newProduct = {
+          name: document.getElementById('productName').value,
+          price: document.getElementById('productPrice').value,
+          category: document.getElementById('productCategory').value,
+          image: imageBase64
+        };
+
+        const products = JSON.parse(localStorage.getItem('products')) || [];
+        products.push(newProduct);
+        localStorage.setItem('products', JSON.stringify(products));
+        
+        document.getElementById('productForm').reset();
+        
+        // إعادة التوجيه التلقائي إلى صفحة القسم
+        const categorySlug = newProduct.category.trim().toLowerCase().replace(/ /g, '-');
+        window.location.href = `category-${categorySlug}.html`;
+        
+      } catch (error) {
+        console.error('حدث خطأ:', error);
+        alert('حدث خطأ أثناء إضافة المنتج!');
+      }
+    });
+
+    // دالة عرض المنتجات
+    function loadProducts() {
+      const products = JSON.parse(localStorage.getItem('products')) || [];
+      const productList = document.getElementById('productList');
+      productList.innerHTML = '';
+      
+      products.forEach((product, index) => {
+        const productDiv = document.createElement('div');
+        productDiv.className = 'product';
+        productDiv.innerHTML = `
+          <h3>${product.name}</h3>
+          <img src="${product.image}" class="product-image">
+          <p>السعر: ${product.price} ر.ي</p>
+          <p>القسم: ${product.category}</p>
+          ${product.category === 'الإلكترونيات' ? 
+            `<button class="whatsapp-btn" onclick="sendWhatsApp('${product.name}')">
+              للإستفسار عن المنتج انقر هنا
+            </button>` : ''}
+          <button onclick="deleteProduct(${index})">حذف</button>
+        `;
+        productList.appendChild(productDiv);
+      });
+    }
+
+    // دالة إرسال الواتساب
+    function sendWhatsApp(productName) {
+      const message = `اريد استفسار عن هذا المنتج: ${productName}`;
+      const encodedMessage = encodeURIComponent(message);
+      window.open(`https://wa.me/qr/CCIIHRBXUWZFL1?text=${encodedMessage}`, '_blank');
+    }
+
+    // دالة الحذف
+    function deleteProduct(index) {
+      const products = JSON.parse(localStorage.getItem('products')) || [];
+      products.splice(index, 1);
+      localStorage.setItem('products', JSON.stringify(products));
+      loadProducts();
+    }
+
+    // تحميل المنتجات عند بدء التشغيل
+    loadProducts();
+  </script>
+</body>
+</html>
